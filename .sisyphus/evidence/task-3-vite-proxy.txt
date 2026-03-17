@@ -1,3 +1,6 @@
+=== QA SCENARIO: Vite Proxy Configuration ===
+
+Configuration File: frontend/vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -13,3 +16,8 @@ export default defineConfig({
     },
   },
 })
+
+=== VERIFICATION ===
+✓ Proxy configuration found
+✓ /api route configured
+✓ Backend target http://localhost:8000 configured
