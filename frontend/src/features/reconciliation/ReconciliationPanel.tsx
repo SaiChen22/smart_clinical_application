@@ -2,14 +2,20 @@ import { useState } from 'react';
 import type { ReconciliationResponse } from '../../types';
 import { ConfidenceBar } from '../../components/ConfidenceBar';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { ErrorMessage } from '../../components/ErrorMessage';
 
 interface ReconciliationPanelProps {
   result: ReconciliationResponse | null;
   loading?: boolean;
+  error?: string | null;
 }
 
-export function ReconciliationPanel({ result, loading = false }: ReconciliationPanelProps) {
+export function ReconciliationPanel({ result, loading = false, error = null }: ReconciliationPanelProps) {
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+
+  if (error) {
+    return <ErrorMessage message={error} />;
+  }
 
   if (loading) {
     return <LoadingSpinner message="Reconciling medications..." />;

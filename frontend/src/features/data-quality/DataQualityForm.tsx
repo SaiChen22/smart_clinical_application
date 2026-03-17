@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import type { DataQualityRequest } from '../../types';
 
 interface DataQualityFormProps {
@@ -206,7 +207,14 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             loading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
           } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
         >
-          {loading ? 'Analyzing...' : 'Analyze Data Quality'}
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <LoadingSpinner size="sm" />
+              <span>Analyzing...</span>
+            </div>
+          ) : (
+            'Analyze Data Quality'
+          )}
         </button>
       </div>
     </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import type { ReconciliationRequest, MedicationSource } from '../../types';
 
 interface ReconciliationFormProps {
@@ -211,7 +212,14 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
             loading ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
-          {loading ? 'Reconciling...' : 'Reconcile Medications'}
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <LoadingSpinner size="sm" />
+              <span>Reconciling...</span>
+            </div>
+          ) : (
+            'Reconcile Medications'
+          )}
         </button>
       </div>
     </form>
