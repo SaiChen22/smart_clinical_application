@@ -136,7 +136,11 @@ class CachedProvider(LLMProvider):
             Reconciliation response (from cache or real provider)
         """
         request_dict = request.model_dump()
-        cached = self._cache.get_cached(self._provider.provider_name, request_dict)
+        try:
+            cached = self._cache.get_cached(self._provider.provider_name, request_dict)
+        except Exception:
+            logger.warning("Cache read failed for reconciliation — treating as miss", exc_info=True)
+            cached = None
 
         if cached:
             # Cache hit
@@ -146,9 +150,16 @@ class CachedProvider(LLMProvider):
         # Cache miss - call real provider
         logger.info(f"Cache MISS for {self._provider.provider_name} reconciliation")
         response = await self._provider.reconcile_medications(request)
-        self._cache.set_cached(
-            self._provider.provider_name, request_dict, response.model_dump_json()
-        )
+        try:
+            self._cache.set_cached(
+                self._provider.provider_name, request_dict, response.model_dump_json()
+            )
+        except Exception:
+            logger.warning(
+                "Failed to cache reconciliation response for %s — continuing without cache",
+                self._provider.provider_name,
+                exc_info=True,
+            )
         return response
 
     async def assess_data_quality(
@@ -163,7 +174,11 @@ class CachedProvider(LLMProvider):
             Data quality response (from cache or real provider)
         """
         request_dict = request.model_dump()
-        cached = self._cache.get_cached(self._provider.provider_name, request_dict)
+        try:
+            cached = self._cache.get_cached(self._provider.provider_name, request_dict)
+        except Exception:
+            logger.warning("Cache read failed for data quality — treating as miss", exc_info=True)
+            cached = None
 
         if cached:
             # Cache hit
@@ -173,7 +188,14 @@ class CachedProvider(LLMProvider):
         # Cache miss - call real provider
         logger.info(f"Cache MISS for {self._provider.provider_name} data quality")
         response = await self._provider.assess_data_quality(request)
-        self._cache.set_cached(
-            self._provider.provider_name, request_dict, response.model_dump_json()
-        )
+        try:
+            self._cache.set_cached(
+                self._provider.provider_name, request_dict, response.model_dump_json()
+            )
+        except Exception:
+            logger.warning(
+                "Failed to cache data quality response for %s — continuing without cache",
+                self._provider.provider_name,
+                exc_info=True,
+            )
         return response
