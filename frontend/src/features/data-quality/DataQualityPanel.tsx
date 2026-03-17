@@ -1,8 +1,10 @@
 import type { DataQualityResponse, QualityBreakdown } from '../../types';
 import { ScoreIndicator } from '../../components/ScoreIndicator';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 interface DataQualityPanelProps {
   result: DataQualityResponse | null;
+  loading?: boolean;
 }
 
 const DIMENSIONS: { key: keyof QualityBreakdown; label: string }[] = [
@@ -12,7 +14,11 @@ const DIMENSIONS: { key: keyof QualityBreakdown; label: string }[] = [
   { key: 'clinical_plausibility', label: 'Clinical Plausibility' },
 ];
 
-export function DataQualityPanel({ result }: DataQualityPanelProps) {
+export function DataQualityPanel({ result, loading = false }: DataQualityPanelProps) {
+  if (loading) {
+    return <LoadingSpinner message="Analyzing data quality..." />;
+  }
+
   if (!result) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-12">

@@ -70,7 +70,7 @@ function App() {
                 
                 <div className="border-t border-gray-100 pt-6">
                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Analysis Results</h3>
-                   <ReconciliationPanel result={reconcileResult} />
+                   <ReconciliationPanel result={reconcileResult} loading={reconcileLoading} />
                 </div>
               </div>
             </section>
@@ -100,7 +100,7 @@ function App() {
                 
                 <div className="border-t border-gray-100 pt-6">
                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Quality Analysis</h3>
-                   <DataQualityPanel result={dataQualityResult} />
+                   <DataQualityPanel result={dataQualityResult} loading={dataQualityLoading} />
                 </div>
               </div>
             </section>
