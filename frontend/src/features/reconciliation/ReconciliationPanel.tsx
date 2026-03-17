@@ -13,8 +13,7 @@ export function ReconciliationPanel({ result }: ReconciliationPanelProps) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-12">
         <div className="text-center">
-          <p>No reconciliation results yet.</p>
-          <p className="text-sm mt-2">Submit the form to see AI analysis.</p>
+          <p>Submit a medication reconciliation request to see results</p>
         </div>
       </div>
     );

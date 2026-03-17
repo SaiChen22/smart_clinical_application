@@ -85,7 +85,7 @@ export async function reconcileMedication(
   request: ReconciliationRequest
 ): Promise<ReconciliationResponse> {
   return fetchApi<ReconciliationResponse>(
-    "/reconciliation/reconcile",
+    "/reconcile/medication",
     "POST",
     request
   );

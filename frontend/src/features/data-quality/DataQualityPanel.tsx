@@ -14,7 +14,13 @@ const DIMENSIONS: { key: keyof QualityBreakdown; label: string }[] = [
 
 export function DataQualityPanel({ result }: DataQualityPanelProps) {
   if (!result) {
-    return null;
+    return (
+      <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-12">
+        <div className="text-center">
+          <p>Submit patient data to see quality analysis</p>
+        </div>
+      </div>
+    );
   }
 
   const getBarColor = (score: number) => {
