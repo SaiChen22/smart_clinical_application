@@ -476,3 +476,194 @@ Database: reconciliation.db (created successfully)
 - Could add more granular auth (e.g., different keys for different roles) via middleware
 - API key rotation strategy (could add expiry/revocation table) for future enhancement
 
+
+---
+
+## Task 8: TypeScript Types and API Client
+
+### Completed
+✓ Created frontend/src/types/index.ts with 10 type definitions
+✓ Created frontend/src/lib/api.ts with 3 API client functions
+✓ Created frontend/src/lib/errors.ts with ApiErrorException class
+✓ All TypeScript compilation passes (npx tsc --noEmit → exit 0)
+✓ pnpm build succeeds (Vite produces optimized bundle, 191.81 kB gzipped 60.38 kB)
+✓ Evidence saved to .sisyphus/evidence/task-8-types-compile.txt
+
+### Patterns Established
+
+1. **TypeScript Type Mirroring**:
+   - Frontend types mirror backend Pydantic schemas exactly (field names, types, optionality)
+   - Use `type X | null` for optional fields matching Python's `str | None` semantics
+   - Use `"high" | "medium" | "low"` union types for Literal constraints
+   - Interfaces used exclusively (no classes for type definitions)
+
+2. **API Client Design with Native Fetch**:
+   - No axios dependency - uses fetch API exclusively
+   - Centralized fetchApi wrapper function handles headers, error parsing, JSON response
+   - API_BASE_URL set to "" (empty string) - Vite proxy handles /api routing
+   - X-API-Key header read from import.meta.env.VITE_API_KEY environment variable
+   - Error handling: checks response.ok, parses error response JSON, throws typed ApiErrorException
+
+3. **TypeScript Compiler Strictness**:
+   - tsconfig.app.json uses verbatimModuleSyntax=true (requires explicit type imports)
+   - erasableSyntaxOnly=true (classes with public properties forbidden)
+   - Solution: Use `import type` for type-only imports, separate error class in own file
+   - Type-only imports prevent runtime overhead: `import type { X, Y } from "..."` 
+
+4. **Error Handling Pattern**:
+   - ApiError interface for error response structure
+   - ApiErrorException class extends Error with status and detail properties
+   - Must use `readonly` keyword instead of public parameter declaration (erasable syntax requirement)
+   - Fetch wrapper catches and rethrows with typed error
+
+5. **API Client Functions**:
+   - Async functions returning `Promise<T>` typed by response interface
+   - reconcileMedication(): POST /api/reconciliation/reconcile (ReconciliationRequest → ReconciliationResponse)
+   - validateDataQuality(): POST /api/data-quality/validate (DataQualityRequest → DataQualityResponse)
+   - checkHealth(): GET /api/health (minimal response {status: string})
+
+### Key Decisions
+
+- **Type-Only Imports**: Used `import type` for all schema types to comply with verbatimModuleSyntax
+- **Error Class Separation**: Created separate errors.ts file since erasable syntax doesn't allow class property declarations
+- **Empty API_BASE_URL**: Left empty string to work with Vite proxy (handles /api → http://localhost:8000)
+- **VITE_API_KEY from Env**: Read API key from environment variable, defaults to "development-key"
+- **Single Fetch Wrapper**: Centralized error handling prevents duplication across 3 API functions
+- **No Axios**: Explicitly avoided axios - native fetch is smaller and adequate for simple requests
+
+### Gotchas
+
+1. **verbatimModuleSyntax + Type Imports**:
+   - Cannot use `import { X }` for types with this setting enabled
+   - Must use `import type { X }` syntax
+   - Error: "X is a type and must be imported using a type-only import"
+   - Affects all 5 type imports in api.ts
+
+2. **erasableSyntaxOnly Class Restrictions**:
+   - Cannot use public property shorthand: `constructor(public status: number)`
+   - Must use explicit field declarations with readonly keyword
+   - Error: "This syntax is not allowed when 'erasableSyntaxOnly' is enabled"
+   - Workaround: `readonly status: number; constructor(status: number) { this.status = status; }`
+
+3. **API Environment Variable**:
+   - Vite environment variables must be prefixed with VITE_
+   - import.meta.env.VITE_API_KEY accesses variable at runtime
+   - Default to "development-key" if not set (safe for local dev)
+   - Backend API key validation happens server-side in header check
+
+4. **Fetch URL Construction**:
+   - Empty API_BASE_URL ("") + `/api/endpoint` = `/api/endpoint` (relative URL)
+   - Vite dev proxy intercepts `/api/*` and forwards to http://localhost:8000
+   - In production, would need non-empty API_BASE_URL (or use absolute URL)
+
+5. **Response Type Inference**:
+   - response.json() returns `Promise<unknown>`, must cast to typed response
+   - Use `response.json() as Promise<T>` for type safety in generic wrapper
+   - Error response may have different shape (detail vs error vs message field)
+
+### Configuration Files Reference
+
+**tsconfig.app.json (relevant settings)**:
+```json
+{
+  "compilerOptions": {
+    "verbatimModuleSyntax": true,  // Forces explicit type imports
+    "erasableSyntaxOnly": true,    // Disallows certain class patterns
+    "strict": true,                 // Full strict type checking
+    "noUnusedLocals": true,        // Error on unused variables
+    "noUnusedParameters": true,    // Error on unused function params
+  }
+}
+```
+
+**API Environment Variable (in .env or .env.local)**:
+```
+VITE_API_KEY=your-api-key-here
+```
+
+### Build & Compilation Results
+
+- TypeScript check: ✓ 0 errors (npx tsc --noEmit)
+- Vite build: ✓ 0 errors, 17 modules transformed
+- Bundle size: 191.81 kB (gzipped: 60.38 kB)
+- Build time: 589ms
+
+### QA Scenario Execution
+
+**Step 1: TypeScript Compiler Verification**
+```bash
+$ npx tsc --noEmit
+# Exit code: 0 (no errors)
+```
+
+**Step 2: Vite Build**
+```bash
+$ pnpm build
+# ✓ built in 589ms
+# dist/assets/index-BQ2J-uHJ.js 191.81 kB │ gzip: 60.38 kB
+```
+
+### Files Modified/Created
+
+**Created**:
+- `frontend/src/types/index.ts` (94 lines)
+  - 10 type definitions mirroring backend schemas
+  - ApiError interface for error responses
+  
+- `frontend/src/lib/api.ts` (106 lines)
+  - 3 async API functions
+  - Centralized fetchApi wrapper with error handling
+  - X-API-Key header configuration
+  
+- `frontend/src/lib/errors.ts` (15 lines)
+  - ApiErrorException class with readonly status/detail
+
+**Not Created** (per requirements):
+- React hooks (Task 16)
+- UI components
+
+### Time Log
+
+- types/index.ts creation + fixes: 3 min
+- api.ts creation + type import fixes: 2 min
+- errors.ts creation (erasable syntax fix): 1 min
+- TypeScript compilation fixes: 2 min
+- Build verification + QA: 1 min
+- Evidence documentation: 1 min
+- Total: ~10 min
+
+### Next Task Considerations
+
+- React hooks will import and use these API functions (Task 16)
+- Environment variable VITE_API_KEY must be set in .env/.env.local
+- API endpoints must match backend routes (/api/reconciliation/reconcile, /api/data-quality/validate)
+- Error handling in components should catch ApiErrorException and display detail message
+- May need to add retry logic or request timeout handling for network resilience
+
+---
+
+## Task 6: LLM Provider Abstraction
+
+### Completed
+✓ Created base.py with LLMProvider ABC
+✓ Created mock.py with MockProvider implementation
+✓ Created factory.py with get_llm_provider() function
+✓ Created test_llm_providers.py with 3 passing pytest tests
+✓ All tests pass (3/3)
+
+### Patterns Established
+- Provider abstraction works best with a minimal async interface (`reconcile_medications`, `assess_data_quality`) plus a `provider_name` property for traceability.
+- Mock clinical behavior can stay deterministic by combining timestamp-based source selection with scenario-specific recommended actions.
+- Data quality scoring is predictable and testable when each dimension is implemented as an isolated pure helper function and the final score is a simple average.
+
+### Key Decisions
+- Used relative imports within `app.services.llm` modules to satisfy strict LSP diagnostics while keeping runtime imports stable from backend root.
+- Implemented three explicit medication scenarios (`lisinopril`, `metformin`, `warfarin`) with clinically plausible action plans; all other medications use a generic safe fallback.
+- Treated timeliness as DOB-derived age-based scoring (`<1 year = 100`, else `max(0, 100-age)`) and added an issue when age context is missing.
+
+### Gotchas
+- The environment required installing `basedpyright-langserver` (via global npm package `basedpyright`) before `lsp_diagnostics` could run.
+- `temperature` in current schema is described as Celsius, but task scoring rules required Fahrenheit plausibility bounds (95–105), so mock scoring follows the task rules directly.
+
+### Time Log
+- 2026-03-16, ~28 minutes

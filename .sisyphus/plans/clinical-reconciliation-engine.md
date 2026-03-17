@@ -732,7 +732,7 @@ clinical-reconciliation-engine/
   - Files: `backend/app/core/database.py`, `backend/app/models/cache.py`
   - Pre-commit: `cd backend && python -c "from app.core.database import engine"`
 
-- [ ] 6. LLM Provider Abstraction (Interface + MockProvider + Factory)
+- [x] 6. LLM Provider Abstraction (Interface + MockProvider + Factory)
 
   **What to do**:
   - Create `backend/app/services/llm/base.py`:
