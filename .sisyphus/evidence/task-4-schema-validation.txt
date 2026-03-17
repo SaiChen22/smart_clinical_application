@@ -1,0 +1,43 @@
+QA Scenario 1: Valid Input Acceptance
+=====================================
+Timestamp: 2025-03-16 10:30 UTC
+Status: PASSED
+
+Test Cases Executed:
+1. ✓ ReconciliationRequest with valid input
+   - age=65 (within 0-150 range)
+   - conditions=["Hypertension", "Diabetes"] (min 1 item)
+   - recent_labs={"glucose": 145.0, "hemoglobin_a1c": 7.2} (optional)
+   - sources=[2 MedicationSource objects] (within 1-50 range)
+   Result: ACCEPTED (no ValidationError)
+
+2. ✓ ReconciliationResponse with valid input
+   - reconciled_medication="Metformin 500mg"
+   - confidence_score=0.88 (within 0.0-1.0 range)
+   - reasoning="Two sources with high reliability confirm same medication"
+   - recommended_actions=["Confirm with patient", "Update EHR"] (list)
+   - clinical_safety_check="PASSED" (valid Literal value)
+   Result: ACCEPTED (no ValidationError)
+
+3. ✓ DataQualityRequest with valid input
+   - demographics with name, dob, gender (all optional)
+   - medications=["Metformin 500mg", "Lisinopril 10mg"] (list)
+   - allergies=["Penicillin"] (list)
+   - conditions=["Hypertension", "Diabetes"] (list)
+   - vital_signs with blood_pressure, heart_rate, temperature (optional)
+   - last_updated="2024-03-15T10:00:00Z" (optional)
+   Result: ACCEPTED (no ValidationError)
+
+4. ✓ DataQualityResponse with valid input
+   - overall_score=62 (within 0-100 range)
+   - breakdown=QualityBreakdown with scores 60, 50, 70, 40 (all within 0-100)
+   - issues_detected=[IssueDetected with severity="high"] (valid Literal)
+   Result: ACCEPTED (no ValidationError)
+
+Summary:
+- All model imports successful
+- All validators passed
+- All field constraints honored
+- Response shapes match assessment specification
+
+Evidence File: /home/sai_chen/Projects/test/Oney_assessment_oc/.sisyphus/evidence/task-4-schema-validation.txt

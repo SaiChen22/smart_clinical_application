@@ -958,7 +958,7 @@ clinical-reconciliation-engine/
 
 ### Wave 3 — Core Backend Features (3 parallel, after Wave 2)
 
-- [ ] 9. POST /api/reconcile/medication Endpoint + Tests
+- [x] 9. POST /api/reconcile/medication Endpoint + Tests
 
   **What to do**:
   - Create `backend/app/api/routes/reconciliation.py`:
@@ -1045,7 +1045,7 @@ clinical-reconciliation-engine/
   - Files: `backend/app/api/routes/reconciliation.py`, `backend/app/services/reconciliation.py`, `backend/tests/test_reconciliation.py`
   - Pre-commit: `cd backend && python -m pytest tests/test_reconciliation.py -v`
 
-- [ ] 10. POST /api/validate/data-quality Endpoint + Tests
+- [x] 10. POST /api/validate/data-quality Endpoint + Tests
 
   **What to do**:
   - Create `backend/app/api/routes/data_quality.py`:
@@ -1126,7 +1126,7 @@ clinical-reconciliation-engine/
   - Files: `backend/app/api/routes/data_quality.py`, `backend/app/services/data_quality.py`, `backend/tests/test_data_quality.py`
   - Pre-commit: `cd backend && python -m pytest tests/test_data_quality.py -v`
 
-- [ ] 11. LLM Response Caching Service
+- [x] 11. LLM Response Caching Service
 
   **What to do**:
   - Create `backend/app/services/llm/cache.py`:

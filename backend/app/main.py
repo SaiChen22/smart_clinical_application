@@ -7,8 +7,9 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import get_settings
-from app.core.database import init_db
+from .api.routes import data_quality, reconciliation
+from .core.config import get_settings
+from .core.database import init_db
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(reconciliation.router)
+app.include_router(data_quality.router)
 
 
 @app.get("/api/health")
