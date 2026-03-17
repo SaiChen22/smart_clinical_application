@@ -46,10 +46,79 @@ class MockProvider(LLMProvider):
         chosen_source = self._select_most_recent_source(request)
         patient_context: PatientContext = request.patient_context
         medication = chosen_source.medication
+        medication_lower = medication.lower()
         source_name = chosen_source.system
         conflicting_sources = sorted({source.system for source in request.sources})
-        safety_check = "PASSED"
 
+        # Scenario 1: Metformin dosage adjustment based on kidney function
+        if "metformin" in medication_lower:
+            return ReconciliationResponse(
+                reconciled_medication="Metformin 500mg twice daily",
+                confidence_score=0.88,
+                reasoning=(
+                    "Reconciled to Metformin 500mg twice daily based on most recent "
+                    "pharmacy record and patient's eGFR of 52 mL/min/1.73m². The hospital "
+                    "EHR shows 1000mg dosing, but this exceeds the recommended maximum for "
+                    "stage 3a CKD. Primary care note from Feb 20 documents renal function "
+                    "decline, supporting dose reduction. High confidence in 500mg dosing "
+                    "given renal impairment and pharmacy dispensing records."
+                ),
+                recommended_actions=[
+                    "Verify current eGFR and adjust if kidney function has changed",
+                    "Monitor for hypoglycemia with reduced dose",
+                    "Schedule 3-month follow-up for HbA1c recheck",
+                ],
+                clinical_safety_check="PASSED",
+            )
+
+        # Scenario 2: Lipitor/Atorvastatin brand vs generic equivalence with dose discrepancy
+        if "lipitor" in medication_lower or "atorvastatin" in medication_lower:
+            return ReconciliationResponse(
+                reconciled_medication="Atorvastatin 40mg daily (brand: Lipitor)",
+                confidence_score=0.72,
+                reasoning=(
+                    "Reconciled multiple sources showing brand (Lipitor) and generic "
+                    "(Atorvastatin) forms. Pharmacy records document Lipitor 40mg dispensed "
+                    "on Feb 15, but hospital EHR entry shows Atorvastatin 80mg, suggesting "
+                    "potential data entry error or recent dose adjustment not yet reflected "
+                    "in EHR. Both are therapeutically equivalent (same active ingredient), "
+                    "but dose discrepancy (40mg vs 80mg) requires clinician verification. "
+                    "Confidence moderate due to conflicting dosing information."
+                ),
+                recommended_actions=[
+                    "Verify current dose with patient and pharmacy",
+                    "Confirm if dose adjustment (40mg→80mg) was intentional",
+                    "Update EHR with reconciled dose and source system",
+                    "Check LDL-C response at next visit if dose increased",
+                ],
+                clinical_safety_check="PASSED",
+            )
+
+        # Scenario 3: Aspirin status conflict - active vs discontinued
+        if "aspirin" in medication_lower:
+            return ReconciliationResponse(
+                reconciled_medication="Aspirin status: DISCONTINUED",
+                confidence_score=0.65,
+                reasoning=(
+                    "Reconciliation reveals conflicting medication status across sources. "
+                    "Pharmacy shows Aspirin 81mg listed as active with last fill on Jan 2026. "
+                    "Hospital discharge note from Feb 10 documents 'Aspirin discontinued due to "
+                    "bleeding risk.' Patient report during interview suggests uncertain status. "
+                    "Most recent and authoritative source is discharge note documenting "
+                    "discontinuation. Confidence lower than ideal due to status conflict requiring "
+                    "clinical review."
+                ),
+                recommended_actions=[
+                    "Review discharge summary for contraindication documentation",
+                    "Clarify with patient regarding current Aspirin use",
+                    "If restarting needed, verify bleeding risk has been mitigated",
+                    "Consider alternative antiplatelet agent if indicated",
+                ],
+                clinical_safety_check="WARNING",
+            )
+
+        # Default fallback scenario
+        safety_check = "PASSED"
         scenario_actions = self._actions_for_medication(medication)
         reasoning = (
             f"Selected {medication} from {source_name} based on the most recent "
@@ -69,6 +138,53 @@ class MockProvider(LLMProvider):
 
     @override
     async def assess_data_quality(self, request: DataQualityRequest) -> DataQualityResponse:
+        demographics: Demographics = request.demographics
+        name_lower = (demographics.name or "").lower()
+
+        # Scenario: John Doe - score ~62 (low timeliness + moderate plausibility issues)
+        if "john doe" in name_lower or "john" in name_lower:
+            return DataQualityResponse(
+                overall_score=62,
+                breakdown=QualityBreakdown(
+                    completeness=75,
+                    accuracy=85,
+                    timeliness=40,
+                    clinical_plausibility=50,
+                ),
+                issues_detected=[
+                    IssueDetected(
+                        field="allergies",
+                        issue="Allergy information likely incomplete - no allergies documented",
+                        severity="medium",
+                    ),
+                    IssueDetected(
+                        field="last_updated",
+                        issue="Data is stale - last updated >6 months ago",
+                        severity="medium",
+                    ),
+                ],
+            )
+
+        # Scenario: Perfect patient - score >90 (minimal issues)
+        if "perfect" in name_lower or (demographics.dob and "1990" in demographics.dob):
+            return DataQualityResponse(
+                overall_score=95,
+                breakdown=QualityBreakdown(
+                    completeness=100,
+                    accuracy=100,
+                    timeliness=100,
+                    clinical_plausibility=80,
+                ),
+                issues_detected=[
+                    IssueDetected(
+                        field="emergency_contact",
+                        issue="Consider adding emergency contact information for safety",
+                        severity="low",
+                    ),
+                ],
+            )
+
+        # Default: Use algorithmic scoring
         issues: list[IssueDetected] = []
 
         completeness = self._completeness_score(request, issues)

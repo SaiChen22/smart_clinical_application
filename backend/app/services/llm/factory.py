@@ -1,6 +1,8 @@
 from ...core.config import Settings
+from .anthropic_provider import AnthropicProvider
 from .base import LLMProvider
 from .cache import CachedProvider
+from .github_models import GitHubModelsProvider
 from .mock import MockProvider
 
 
@@ -10,13 +12,13 @@ def get_llm_provider(settings: Settings) -> LLMProvider:
 
     # Real providers - wrap with caching
     if settings.llm_provider == "github_models":
-        # base_provider = GitHubModelsProvider(settings)  # Task 12
-        # return CachedProvider(base_provider)
-        raise NotImplementedError("GitHub Models provider not yet implemented")
+        if not settings.github_token:
+            raise ValueError("github_token is required for github_models provider")
+        return CachedProvider(GitHubModelsProvider(settings))
 
     if settings.llm_provider == "anthropic":
-        # base_provider = AnthropicProvider(settings)  # Task 12
-        # return CachedProvider(base_provider)
-        raise NotImplementedError("Anthropic provider not yet implemented")
+        if not settings.anthropic_api_key:
+            raise ValueError("anthropic_api_key is required for anthropic provider")
+        return CachedProvider(AnthropicProvider(settings))
 
     raise ValueError(f"Unknown LLM provider: {settings.llm_provider}")
