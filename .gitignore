@@ -83,3 +83,4 @@ Thumbs.db
 .turbo/
 *.log
 .eslintcache
+.sisyphus/

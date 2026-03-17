@@ -7,6 +7,7 @@ AI-powered full-stack application that reconciles medication data from multiple 
 ```bash
 # 1. Clone and configure
 cp .env.example .env  # Edit with your API keys (or leave LLM_MOCK_MODE=true)
+cp .env backend/.env  # Backend loads .env from backend/ when started there
 
 # 2. Backend
 cd backend
@@ -16,10 +17,11 @@ uvicorn app.main:app --reload --port 8000
 
 # 3. Frontend (new terminal)
 cd frontend
+echo "VITE_API_KEY=your-api-key-here" > .env.local
 pnpm install && pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). The app works immediately in mock mode — no API keys required.
+Open the Vite URL shown in terminal (usually [http://localhost:5173](http://localhost:5173)). The app works immediately in mock mode — no API keys required.
 
 ## API Endpoints
 
@@ -148,7 +150,7 @@ pnpm test -- --run
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `LLM_MOCK_MODE` | No | `true` | Use mock LLM provider (no API keys needed) |
-| `LLM_PROVIDER` | No | `github_models` | LLM provider: `github_models`, `anthropic`, `mock` |
+| `LLM_PROVIDER` | No | `mock` | LLM provider: `github_models`, `anthropic`, `mock` |
 | `API_KEY` | Yes | — | API key for endpoint authentication |
 | `GITHUB_TOKEN` | If using GitHub Models | — | GitHub personal access token with Models scope |
 | `ANTHROPIC_API_KEY` | If using Anthropic | — | Anthropic API key |
