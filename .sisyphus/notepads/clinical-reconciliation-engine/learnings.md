@@ -360,3 +360,119 @@ Database: reconciliation.db (created successfully)
 - TTL validation logic needed in service layer (check created_at + ttl_seconds vs now())
 - May need cache cleanup job to purge expired entries
 - Response caching can be wrapped in service layer with try/except on cache miss
+
+## Task 7: API Key Authentication Middleware
+
+### Completed
+✓ Created backend/app/core/security.py with verify_api_key dependency
+✓ Created backend/tests/test_auth.py with 2 pytest tests (unauthenticated rejected, authenticated passes)
+✓ Tests execute with pytest and both PASS
+✓ Created QA evidence file (task-7-auth-evidence.txt)
+
+### Patterns Established
+
+1. **FastAPI Dependency Injection**:
+   - Used `Annotated[str, Header()]` to extract X-API-Key from request headers
+   - Function signature: `async def verify_api_key(x_api_key: Annotated[str, Header()] = "")`
+   - Returns API key on success (allows dependency chaining)
+   - Can be added to routes via `dependencies=[Depends(verify_api_key)]`
+
+2. **Timing-Safe Comparison**:
+   - Used `secrets.compare_digest(x_api_key, settings.api_key)` for timing-attack resistance
+   - Prevents attackers from guessing API key character-by-character via timing
+   - Compares both empty string and invalid keys consistently
+
+3. **Development Mode Support**:
+   - If `settings.api_key` is empty string, function logs warning and allows all requests
+   - Enables development without requiring API_KEY in .env
+   - Production must set non-empty API_KEY for authentication to activate
+
+4. **Error Response Format**:
+   - HTTPException with status_code=401
+   - Detail is dict with structure: `{"code": "UNAUTHORIZED", "message": "Invalid or missing API key"}`
+   - FastAPI automatically serializes to JSON response
+
+5. **Pytest Async Testing**:
+   - Used `@pytest.mark.asyncio` to enable async test functions
+   - Used `unittest.mock.patch` to mock `get_settings()` function
+   - Mock returns `Settings(api_key=test_key)` for test isolation
+   - Tests don't require TestClient (direct function invocation)
+
+6. **Import and Path Handling**:
+   - Tests add backend path via `sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))`
+   - Allows relative imports from app.* modules
+   - Must activate venv before running pytest (system pytest doesn't have dependencies)
+
+### Key Decisions
+
+- **No Route Wiring**: Task 7 creates dependency but does NOT wire it to routes
+  - Routes remain unauthenticated until explicitly added to dependencies
+  - Allows gradual adoption: `/api/health` stays open, protected routes use `depends=...`
+- **Header Parameter Name**: Used `x_api_key` (lowercase) as convention matches FastAPI style
+- **Default Empty String**: `x_api_key=""` default allows optional header, then check happens in function
+- **Mock over TestClient**: Direct async function testing cleaner than TestClient + route setup
+
+### Gotchas
+
+1. **Annotated Required for Headers**: FastAPI requires `Annotated[str, Header()]` syntax
+   - Using `x_api_key: str = Header(...)` without Annotated causes import errors
+   - Pattern: `from typing import Annotated` + `Annotated[type, Header()]`
+
+2. **Async Function Syntax**: `verify_api_key` is async even though it doesn't await anything
+   - FastAPI allows both sync and async dependencies
+   - Using async allows future database lookups without changing signature
+
+3. **Pydantic Config Deprecation Warning**: Settings class uses deprecated `Config` inner class
+   - Warning: "Support for class-based `config` is deprecated, use ConfigDict instead"
+   - Safe to ignore for now (still works in Pydantic v2)
+   - Fix requires: `from pydantic import ConfigDict` + `model_config = ConfigDict(...)`
+
+4. **pytest-asyncio Mode Strict**: Tests default to `Mode.STRICT`
+   - Each test must mark async functions with `@pytest.mark.asyncio`
+   - Can't mix sync and async tests without proper markers
+
+5. **Venv Required for Tests**: System Python doesn't have fastapi/pytest installed
+   - Always use `source venv/bin/activate` before running pytest
+   - Or use `/venv/bin/pytest` directly
+
+### Security Implementation Details
+
+- **timing-safe**: secrets.compare_digest ensures O(n) time regardless of mismatch position
+- **empty check**: Not needed (compare_digest handles empty string safely)
+- **header extraction**: FastAPI normalizes header names (X-API-Key → x_api_key)
+- **error message**: Generic "Invalid or missing API key" (doesn't leak if key exists)
+
+### QA Scenarios Passing
+
+1. ✓ Unauthenticated request (empty API key) → 401 UNAUTHORIZED with correct detail
+2. ✓ Authenticated request (valid API key) → Returns API key, no exception
+
+### Testing Notes
+
+- Tests mock `get_settings()` to avoid loading .env file
+- Each test gets fresh Settings instance with different api_key values
+- Mock applied via `patch("app.core.security.get_settings")`
+- No need for database, file system, or external services
+
+### Files Created/Modified
+
+- backend/app/core/security.py (NEW) - 47 lines
+- backend/tests/test_auth.py (NEW) - 40 lines
+- No modifications to existing files (backward compatible)
+
+### Time Log
+
+- security.py creation: 1 min
+- test_auth.py (first attempt, then fixed): 2 min
+- pytest debugging (venv activation): 1 min
+- evidence documentation: 1 min
+- notepad learning: 1 min
+- Total: ~6 min
+
+### Next Task Considerations
+
+- Router files in backend/app/api/routes/ can add `dependencies=[Depends(verify_api_key)]` to enable auth
+- /api/health endpoint explicitly excluded from auth (no dependencies)
+- Could add more granular auth (e.g., different keys for different roles) via middleware
+- API key rotation strategy (could add expiry/revocation table) for future enhancement
+
