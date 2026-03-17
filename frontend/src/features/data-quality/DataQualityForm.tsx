@@ -25,8 +25,55 @@ const INITIAL_DATA: DataQualityRequest = {
   last_updated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 };
 
+const IMPLAUSIBLE_CASE: DataQualityRequest = {
+  demographics: {
+    name: 'Test Subject Alpha',
+    dob: '1980-01-01',
+    gender: 'female',
+  },
+  medications: [],
+  allergies: [],
+  conditions: [],
+  vital_signs: {
+    blood_pressure: '340/180',
+    heart_rate: 250,
+    temperature: 42.0,
+  },
+  last_updated: '2020-01-01',
+};
+
+const PERFECT_CASE: DataQualityRequest = {
+  demographics: {
+    name: 'Jane Smith',
+    dob: '1990-05-20',
+    gender: 'female',
+  },
+  medications: ['Multivitamin', 'Vitamin D'],
+  allergies: ['Peanuts'],
+  conditions: ['Healthy'],
+  vital_signs: {
+    blood_pressure: '118/75',
+    heart_rate: 68,
+    temperature: 36.6,
+  },
+  last_updated: new Date().toISOString().split('T')[0],
+};
+
+const TEST_CASES = [
+  { name: 'Standard Case', data: INITIAL_DATA },
+  { name: 'Implausible Vitals', data: IMPLAUSIBLE_CASE },
+  { name: 'Perfect Record', data: PERFECT_CASE },
+];
+
 export function DataQualityForm({ onSubmit, loading = false, error = null }: DataQualityFormProps) {
   const [formData, setFormData] = useState<DataQualityRequest>(INITIAL_DATA);
+  const [testCaseIndex, setTestCaseIndex] = useState(0);
+
+  const loadNextTestCase = () => {
+    const nextIndex = (testCaseIndex + 1) % TEST_CASES.length;
+    setTestCaseIndex(nextIndex);
+    setFormData(TEST_CASES[nextIndex].data);
+  };
 
   const handleDemographicsChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -89,7 +136,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             name="name"
             value={formData.demographics.name || ''}
             onChange={handleDemographicsChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
             required
           />
         </div>
@@ -100,7 +147,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             name="dob"
             value={formData.demographics.dob || ''}
             onChange={handleDemographicsChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
             required
           />
         </div>
@@ -110,7 +157,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             name="gender"
             value={formData.demographics.gender || ''}
             onChange={handleDemographicsChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           >
             <option value="">Select Gender</option>
             <option value="male">Male</option>
@@ -130,7 +177,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             value={formData.vital_signs.blood_pressure || ''}
             onChange={handleVitalChange}
             placeholder="e.g. 120/80"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
         <div>
@@ -140,7 +187,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             name="heart_rate"
             value={formData.vital_signs.heart_rate || ''}
             onChange={handleVitalChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
         <div>
@@ -151,7 +198,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             name="temperature"
             value={formData.vital_signs.temperature || ''}
             onChange={handleVitalChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
       </div>
@@ -164,7 +211,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             value={formData.medications.join('\n')}
             onChange={(e) => handleListChange('medications', e.target.value)}
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
         <div>
@@ -173,7 +220,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             value={formData.allergies.join('\n')}
             onChange={(e) => handleListChange('allergies', e.target.value)}
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
         <div>
@@ -182,7 +229,7 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
             value={formData.conditions.join('\n')}
             onChange={(e) => handleListChange('conditions', e.target.value)}
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
           />
         </div>
       </div>
@@ -194,11 +241,20 @@ export function DataQualityForm({ onSubmit, loading = false, error = null }: Dat
           type="date"
           value={formData.last_updated || ''}
           onChange={(e) => setFormData(prev => ({ ...prev, last_updated: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <button
+          type="button"
+          onClick={loadNextTestCase}
+          className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          aria-label="Load next test case"
+        >
+          📋 Load Example ({testCaseIndex + 1}/{TEST_CASES.length})
+        </button>
+
         <button
           type="submit"
           disabled={loading}

@@ -17,7 +17,7 @@ const DEFAULT_SOURCE: MedicationSource = {
 };
 
 // Metformin example from assessment
-const INITIAL_STATE: ReconciliationRequest = {
+const METFORMIN_CASE: ReconciliationRequest = {
   patient_context: {
     age: 58,
     conditions: ['type 2 diabetes'],
@@ -41,8 +41,83 @@ const INITIAL_STATE: ReconciliationRequest = {
   ],
 };
 
+const WARFARIN_CASE: ReconciliationRequest = {
+  patient_context: {
+    age: 65,
+    conditions: ['Atrial Fibrillation', 'Hypertension'],
+    recent_labs: { inr: 2.4 },
+  },
+  sources: [
+    {
+      system: 'Cardiologist',
+      medication: 'Warfarin 5mg',
+      last_updated: '2024-03-10',
+      last_filled: '2024-03-10',
+      source_reliability: 'high',
+    },
+    {
+      system: 'PCP',
+      medication: 'Aspirin 81mg',
+      last_updated: '2024-01-15',
+      last_filled: null,
+      source_reliability: 'medium',
+    },
+    {
+      system: 'Urgent Care',
+      medication: 'Ibuprofen 400mg',
+      last_updated: '2024-03-14',
+      last_filled: null,
+      source_reliability: 'low',
+    },
+  ],
+};
+
+const MULTI_SOURCE_CASE: ReconciliationRequest = {
+  patient_context: {
+    age: 72,
+    conditions: ['Heart Failure'],
+    recent_labs: { potassium: 4.2 },
+  },
+  sources: [
+    {
+      system: 'Hospital Discharge',
+      medication: 'Lisinopril 10mg',
+      last_updated: '2023-12-01',
+      last_filled: null,
+      source_reliability: 'high',
+    },
+    {
+      system: 'Community Clinic',
+      medication: 'Lisinopril 20mg',
+      last_updated: '2024-02-15',
+      last_filled: null,
+      source_reliability: 'medium',
+    },
+    {
+      system: 'Specialist',
+      medication: 'Lisinopril 40mg',
+      last_updated: '2024-03-01',
+      last_filled: null,
+      source_reliability: 'high',
+    },
+  ],
+};
+
+const TEST_CASES = [
+  { name: 'Metformin Conflict', data: METFORMIN_CASE },
+  { name: 'Warfarin Interaction', data: WARFARIN_CASE },
+  { name: 'Multi-Source Discrepancy', data: MULTI_SOURCE_CASE },
+];
+
 export function ReconciliationForm({ onSubmit, loading = false, error = null }: ReconciliationFormProps) {
-  const [formData, setFormData] = useState<ReconciliationRequest>(INITIAL_STATE);
+  const [formData, setFormData] = useState<ReconciliationRequest>(METFORMIN_CASE);
+  const [testCaseIndex, setTestCaseIndex] = useState(0);
+
+  const loadNextTestCase = () => {
+    const nextIndex = (testCaseIndex + 1) % TEST_CASES.length;
+    setTestCaseIndex(nextIndex);
+    setFormData(TEST_CASES[nextIndex].data);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +188,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
               type="number"
               value={formData.patient_context.age}
               onChange={(e) => updatePatientContext('age', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             />
           </div>
           <div>
@@ -122,7 +197,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
               type="text"
               value={formData.patient_context.conditions.join(', ')}
               onChange={(e) => updatePatientContext('conditions', e.target.value.split(',').map(c => c.trim()))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             />
           </div>
         </div>
@@ -159,7 +234,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
                     type="text"
                     value={source.system}
                     onChange={(e) => updateSource(index, 'system', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
                     placeholder="e.g. Hospital EHR"
                   />
                 </div>
@@ -169,7 +244,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
                     type="text"
                     value={source.medication}
                     onChange={(e) => updateSource(index, 'medication', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
                     placeholder="e.g. Metformin 500mg"
                   />
                 </div>
@@ -182,7 +257,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
                     type="date"
                     value={source.last_updated || ''}
                     onChange={(e) => updateSource(index, 'last_updated', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
                   />
                 </div>
                 <div>
@@ -190,7 +265,7 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
                   <select
                     value={source.source_reliability}
                     onChange={(e) => updateSource(index, 'source_reliability', e.target.value as MedicationSource['source_reliability'])}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
                   >
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -203,7 +278,16 @@ export function ReconciliationForm({ onSubmit, loading = false, error = null }: 
         </div>
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-between items-center pt-2">
+        <button
+          type="button"
+          onClick={loadNextTestCase}
+          className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors text-sm"
+          aria-label="Load next test case"
+        >
+          📋 Load Example ({testCaseIndex + 1}/{TEST_CASES.length})
+        </button>
+
         <button
           type="submit"
           disabled={loading}
