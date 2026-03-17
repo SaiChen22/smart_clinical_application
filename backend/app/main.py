@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.core.database import init_db
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown lifespan events."""
     # Startup
     logger.info("Starting Clinical Data Reconciliation Engine...")
+    init_db()
     await check_github_models_api()
     yield
     # Shutdown

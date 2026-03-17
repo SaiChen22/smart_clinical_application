@@ -1,0 +1,57 @@
+Task 5: SQLite Database Setup and Cache Model
+==============================================
+
+QA Scenario Results:
+
+1. Database Initialization Test:
+   - Command: python -c "from app.core.database import init_db; init_db()"
+   - Result: ✓ SUCCESS - No errors, database initialized
+
+2. Database File Verification:
+   - File: reconciliation.db
+   - Status: ✓ CREATED - File exists in backend directory
+
+3. Table Creation Verification:
+   - Command: inspect(engine).get_table_names()
+   - Result: ✓ SUCCESS - Table 'llmcache' created
+
+4. Column Verification:
+   - id: INTEGER (primary key) ✓
+   - prompt_hash: VARCHAR(64) (indexed, unique) ✓
+   - response_json: VARCHAR ✓
+   - provider: VARCHAR(50) ✓
+   - created_at: DATETIME ✓
+   - ttl_seconds: INTEGER ✓
+
+5. Index Verification:
+   - Index Name: ix_llmcache_prompt_hash
+   - Unique: YES ✓
+   - Columns: ['prompt_hash'] ✓
+
+6. Constraint Verification:
+   - Primary Key: 'id' ✓
+   - Unique Constraints: ['prompt_hash'] via unique index ✓
+
+Overall Status: ✓ ALL TESTS PASSED
+
+Files Created:
+- backend/app/core/database.py
+- backend/app/models/cache.py
+
+Files Modified:
+- backend/app/main.py (added init_db() import and call in lifespan)
+
+Features Implemented:
+✓ SQLite database engine with check_same_thread=False
+✓ Session dependency factory (get_session)
+✓ Database initialization function (init_db)
+✓ LLMCache SQLModel with all required fields
+✓ Proper indexing and unique constraints
+✓ Default values for timestamps and TTL
+✓ Integration with FastAPI lifespan
+
+Notes:
+- Database URL: "sqlite:///./reconciliation.db"
+- SQLModel ensures both ORM and Pydantic validation
+- Cache model supports LLM response caching with TTL
+- All constraints properly configured at SQLAlchemy level

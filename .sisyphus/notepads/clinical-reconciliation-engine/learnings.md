@@ -161,3 +161,202 @@ All three required test identifiers present in App.tsx:
 - `app-header`: Main header element
 - `reconciliation-panel`: Left panel for medication reconciliation
 - `data-quality-panel`: Right panel for data quality assessment
+
+---
+
+## Task 4: Pydantic Request/Response Schemas
+
+### Completed
+✓ Created reconciliation.py with 4 models (PatientContext, MedicationSource, ReconciliationRequest, ReconciliationResponse)
+✓ Created data_quality.py with 6 models (Demographics, VitalSigns, DataQualityRequest, IssueDetected, QualityBreakdown, DataQualityResponse)
+✓ Updated schemas/__init__.py to export all 10 models
+✓ Added field validators for age (0-150) and confidence_score (0.0-1.0)
+✓ Executed QA Scenario 1: All valid inputs accepted (4 test cases)
+✓ Executed QA Scenario 2: All invalid inputs rejected (8 test cases)
+✓ Saved evidence to .sisyphus/evidence/task-4-schema-*.txt
+
+### Patterns Established
+
+1. **Pydantic v2 BaseModel Usage**:
+   - All schemas inherit from `pydantic.BaseModel`
+   - Field constraints use `Field(..., ge=X, le=Y, min_length=Z, max_length=W)`
+   - Field descriptors always include description parameter for clarity
+
+2. **Type Annotations**:
+   - Used `Literal` from typing for enum-like constraints (source_reliability, clinical_safety_check, severity)
+   - Used optional fields with `str | None = Field(default=None)` syntax (Python 3.10+)
+   - Used `list[str]` and `dict[str, float]` for collections (generic syntax)
+
+3. **Validators**:
+   - Implemented `@field_validator` decorators with `@classmethod` for custom validation logic
+   - Added explicit validation for confidence_score (0.0-1.0) and overall_score (0-100)
+   - Field constraints (ge, le) provide first-line validation; validators add explicit logic
+
+4. **Model Composition**:
+   - PatientContext and Demographics are standalone models used in requests
+   - MedicationSource is a component used in ReconciliationRequest (list)
+   - QualityBreakdown is a component embedded in DataQualityResponse
+   - Response models match exact JSON shape from assessment spec
+
+5. **Export Strategy**:
+   - Central __init__.py imports all models from submodules
+   - __all__ list ensures explicit exports (prevents namespace pollution)
+   - Enables clean imports: `from app.schemas import ReconciliationRequest`
+
+### Key Decisions
+
+- **Literal over Enum**: Used `Literal["high", "medium", "low"]` instead of creating Enum classes for simplicity and JSON serialization
+- **Default dict/list**: Used `default_factory=dict` and implicit list defaults to prevent mutable default issues
+- **Optional fields**: Made Demographics and VitalSigns fields optional (None default) since real EHR data often sparse
+- **Dual validation**: Used both Field constraints (ge/le/min_length) and @field_validator for defense-in-depth
+- **Response shapes**: Structured DataQualityResponse with nested QualityBreakdown to match assessment spec exactly
+
+### Gotchas
+
+1. **Field constraints vs validators**: `Field(..., ge=0.0, le=1.0)` validates range, but field_validator adds explicit error message
+2. **Mutable defaults**: Must use `default_factory=dict` not `default={}` for collections
+3. **Literal vs string**: `Literal["PASSED"]` requires exact case; "passed" would fail validation
+4. **Import paths**: Schemas module needs `sys.path.insert(0, backend_path)` in tests unless run from backend directory
+
+### Testing Summary
+
+**QA Scenario 1: Valid Input Acceptance**
+- ✓ ReconciliationRequest with 2 sources, age=65, confidence_score=0.88
+- ✓ ReconciliationResponse with all fields valid
+- ✓ DataQualityRequest with full demographics and vitals
+- ✓ DataQualityResponse with scores 0-100
+- Result: 4/4 tests passed
+
+**QA Scenario 2: Invalid Input Rejection**
+- ✓ Empty sources list (violates min_length=1)
+- ✓ Invalid reliability="invalid" (not in Literal)
+- ✓ confidence_score=1.5 (violates le=1.0)
+- ✓ confidence_score=-0.5 (violates ge=0.0)
+- ✓ age=151 (violates le=150)
+- ✓ age=-1 (violates ge=0)
+- ✓ overall_score=101 (violates le=100)
+- ✓ severity="critical" (not in Literal)
+- Result: 8/8 tests passed (all rejected correctly)
+
+### Time Log
+- reconciliation.py creation: 2 min
+- data_quality.py creation: 2 min
+- __init__.py exports: 1 min
+- QA testing (scenarios 1 & 2): 2 min
+- Evidence documentation: 1 min
+- Total: ~8 min
+
+### Next Task Considerations
+- Endpoint handlers in backend/app/api/routes/ will use these schemas for request/response validation
+- May need to add more validators for business logic (e.g., age consistency with DOB)
+- Response serialization tested via Pydantic model_dump() (not required for this task)
+
+---
+
+## Task 5: SQLite Database Setup and Cache Model
+
+### Completed
+✓ Created backend/app/core/database.py with create_engine, get_session dependency, init_db() function
+✓ Created backend/app/models/cache.py with LLMCache SQLModel table
+✓ Updated backend/app/main.py to call init_db() in lifespan startup
+✓ Database initialization creates reconciliation.db with llmcache table
+✓ All QA scenarios pass: database file creation, table schema verification, constraint verification
+
+### Patterns Established
+
+1. **SQLModel + FastAPI Integration**:
+   - SQLModel combines SQLAlchemy ORM with Pydantic validation
+   - Models must be imported in database.py before init_db() to register with SQLModel.metadata
+   - Engine creation uses connect_args={"check_same_thread": False} for FastAPI compatibility
+
+2. **Database Session Management**:
+   - SessionLocal factory created with autocommit=False, autoflush=False
+   - get_session() dependency yields sessions and ensures proper cleanup via try/finally
+   - Can be injected into route handlers via Depends(get_session)
+
+3. **LLMCache Model Design**:
+   - 6 fields: id (PK), prompt_hash (unique indexed), response_json, provider, created_at, ttl_seconds
+   - prompt_hash uses sha_column=Column(String(64), nullable=False, index=True, unique=True)
+   - Unique constraints must be applied via sa_column Column definition, not Field parameters
+   - created_at defaults to datetime.utcnow (callable, not static value)
+
+4. **SQLite Configuration**:
+   - Database URL: "sqlite:///./reconciliation.db" (relative path in backend directory)
+   - check_same_thread=False required for FastAPI async request handling
+   - Indexes created automatically by SQLModel from sa_column config
+
+5. **Field Constraint Syntax**:
+   - Mixing Field() constraints with sa_column parameters raises RuntimeError
+   - Solution: Put all SQLAlchemy-specific constraints in sa_column Column()
+   - Use sa_column for: nullable, index, unique, String length, DateTime type
+
+### Key Decisions
+
+- **Sync Engine**: Used synchronous create_engine (not async) for SQLite simplicity
+- **Field vs sa_column**: All index/unique constraints applied via Column, not Field parameters
+- **TTL Field**: Included ttl_seconds with default 3600 (1 hour) for cache expiration logic
+- **Import Order**: Models imported in database.py to ensure registration before init_db()
+- **Lifespan Integration**: init_db() called early in lifespan (before API checks) to ensure DB ready
+
+### Gotchas
+
+1. **SQLModel Constraint Conflicts**: 
+   - Using `unique=True` in Field() with `sa_column` raises RuntimeError
+   - Solution: Apply constraints entirely in Column(), not Field()
+   
+2. **Model Registration**:
+   - LLMCache table won't be created if model isn't imported before init_db()
+   - Must import in database.py: `from app.models.cache import LLMCache`
+
+3. **Default Factories**:
+   - created_at defaults to `datetime.utcnow` (callable) not `datetime.utcnow()` (static)
+   - Using () would create single static timestamp for all records
+
+4. **SQLite Thread Safety**:
+   - check_same_thread=False allows FastAPI's async event loop to use same connection safely
+   - Required because FastAPI may handle requests across multiple threads
+
+### Schema Verification Results
+
+Database: reconciliation.db (created successfully)
+
+**Tables**: ✓ llmcache
+
+**Columns**:
+- id: INTEGER (primary key)
+- prompt_hash: VARCHAR(64) (unique, indexed)
+- response_json: VARCHAR
+- provider: VARCHAR(50)
+- created_at: DATETIME
+- ttl_seconds: INTEGER
+
+**Indexes**:
+- ix_llmcache_prompt_hash: unique=1, columns=['prompt_hash']
+
+**Constraints**:
+- Primary Key: id
+- Unique: prompt_hash (via unique index)
+
+### File Changes Summary
+
+**Created**:
+- backend/app/core/database.py (44 lines)
+- backend/app/models/cache.py (38 lines)
+
+**Modified**:
+- backend/app/main.py (added init_db import + call in lifespan)
+
+### Time Log
+- database.py creation: 2 min
+- cache.py creation + constraint fixes: 3 min
+- main.py integration: 1 min
+- Dependencies installation: 1 min
+- QA testing + schema verification: 2 min
+- Evidence documentation: 1 min
+- Total: ~10 min
+
+### Next Task Considerations
+- Cache lookup endpoints can query by prompt_hash (indexed for performance)
+- TTL validation logic needed in service layer (check created_at + ttl_seconds vs now())
+- May need cache cleanup job to purge expired entries
+- Response caching can be wrapped in service layer with try/except on cache miss
