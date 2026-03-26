@@ -101,10 +101,10 @@ Assess completeness, accuracy, timeliness, and clinical plausibility of patient 
 │         │  │      │ │ Models   │  │  │ SQLite   │  │
 │         │  └──────┘ │ (GPT-4o) │  │  │ Cache    │  │
 │         │           └──────────┘  │  └──────────┘  │
-│         │  ┌──────────┐           │                 │
-│         │  │ Anthropic │           │                 │
-│         │  │ (Claude)  │           │                 │
-│         │  └──────────┘           │                 │
+│         │  ┌──────────┐ ┌──────────┐              │
+│         │  │ Anthropic│ │  OpenAI  │              │
+│         │  │ (Claude) │ │(GPT-5.4m)│              │
+│         │  └──────────┘ └──────────┘              │
 │         └──────────────────────────┘                 │
 └──────────────────────────────────────────────────────┘
 ```
@@ -117,7 +117,7 @@ Assess completeness, accuracy, timeliness, and clinical plausibility of patient 
 | `app/core/` | Config (pydantic-settings), API key auth, SQLite DB, custom exceptions |
 | `app/schemas/` | Request/response Pydantic models mirroring clinical data structures |
 | `app/services/` | Business logic — reconciliation + data quality assessment |
-| `app/services/llm/` | Provider abstraction: mock, GitHub Models (GPT-4o), Anthropic (Claude) |
+| `app/services/llm/` | Provider abstraction: mock, GitHub Models (GPT-4o), Anthropic (Claude), OpenAI (GPT-5.4-mini) |
 | `tests/` | 13 unit tests: auth, reconciliation, data quality, error handling, LLM providers |
 
 ### Frontend (`frontend/`)
@@ -150,10 +150,11 @@ pnpm test -- --run
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `LLM_MOCK_MODE` | No | `true` | Use mock LLM provider (no API keys needed) |
-| `LLM_PROVIDER` | No | `mock` | LLM provider: `github_models`, `anthropic`, `mock` |
+| `LLM_PROVIDER` | No | `mock` | LLM provider: `github_models`, `anthropic`, `openai`, `mock` |
 | `API_KEY` | Yes | — | API key for endpoint authentication |
 | `GITHUB_TOKEN` | If using GitHub Models | — | GitHub personal access token with Models scope |
 | `ANTHROPIC_API_KEY` | If using Anthropic | — | Anthropic API key |
+| `OPENAI_API_KEY` | If using OpenAI | — | OpenAI API key |
 | `VITE_API_KEY` | Yes (frontend) | — | API key passed to frontend (same as `API_KEY`) |
 
 ## Design Decisions
